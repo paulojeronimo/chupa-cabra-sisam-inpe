@@ -1,0 +1,19 @@
+= Robô "Chupa Cabra" para dados disponibilizados pelo SISAM/INPE
+:icons: font
+
+Nesta versão 0.1 o robô pode ser iniciado assim:
+
+----
+$ ./chupa-cabra.sh [estado (código IBGE)]
+----
+
+Leia o script link:chupa-cabra.sh[] para entender os detalhes.
+
+NOTE: O script link:chupa-cabra.js[] (ainda não acabado) oferecerá as
+mesmas funcionalidades mas com execução através do Node.js da seguinte
+forma:
+
+----
+$ npm install
+$ node chupa-cabra.js [estado (código IBGE)]
+----
