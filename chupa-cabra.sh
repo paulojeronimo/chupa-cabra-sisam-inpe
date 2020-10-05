@@ -43,6 +43,10 @@ request_and_save() {
 	$FAKE_MODE && {
 		sleep $FAKE_SLEEP_TIME
 	} || {
+		! [ -f $file_name ] || {
+			echo "Skipping generation of $file_name (it already exists)!"
+			return
+		}
 		curl -X POST http://queimadas.dgi.inpe.br/queimadas/sisam/v2/api/variaveis \
 			-d "uf=$uf" \
 			-d "inicio=$inicio"  \
@@ -61,7 +65,10 @@ request_and_save() {
 			-d 'variaveis=temp_ar' \
 			-d 'variaveis=umid_ar' \
 			-d 'variaveis=prec' \
-			-d 'variaveis=num_focos' 2> /dev/null > $file_name
+			-d 'variaveis=num_focos' 2> /dev/null > $file_name || {
+			echo "File $file_name could not be generated!"
+			return
+		}
 	}
 	echo "File $file_name generated!"
 }
@@ -72,10 +79,16 @@ function request_and_save_by_uf() {
 	local uf=$1
 	local year
 	local month
+	local file_name=$DATA_DIR/$uf.7z
 
 	echo "Starting generation for UF $uf ..."
 	for year in `eval "echo {$INITIAL_YEAR..$FINAL_YEAR}"`
 	do
+		! [ -f $file_name ] || {
+			echo "Skipping generation of $file_name (it already exists)!"
+			return
+		}
+
 		for month in $(eval "echo {$INITIAL_MONTH..$FINAL_MONTH}")
 		do
 			initial_date="01/$month/$year"
@@ -85,8 +98,8 @@ function request_and_save_by_uf() {
 	done
 	$FAKE_MODE || {
 		# https://superuser.com/a/742034
-		7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on $DATA_DIR/$uf.7z $DATA_DIR/$uf*.csv &> /dev/null
-		echo -e "File $DATA_DIR/$uf.7z generated!"
+		7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on $file_name $DATA_DIR/$uf*.csv &> /dev/null
+		echo -e "File $file_name generated!"
 		rm -f $DATA_DIR/$uf*.csv
 		echo "Files $DATA_DIR/$uf*.csv removed!"
 	}
