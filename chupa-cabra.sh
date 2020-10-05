@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+DATA_DIR=${DATA_DIR:-tmp/data}
+
 final_day() {
 	local m=$1
 	local y=$2
@@ -21,9 +23,9 @@ request_and_save() {
 	local uf=$1
 	local inicio=$2
 	local final=$3
-	local filename=${uf}_${month}_${year}.csv
+	local file_name=$DATA_DIR/${uf}_${month}_${year}.csv
 
-	echo "Gerando o arquivo $filename ..."
+	echo "Gerando o arquivo $file_name ..."
 	curl -X POST http://queimadas.dgi.inpe.br/queimadas/sisam/v2/api/variaveis \
 		-d "uf=$uf" \
 		-d "inicio=$inicio"  \
@@ -42,14 +44,19 @@ request_and_save() {
 		-d 'variaveis=temp_ar' \
 		-d 'variaveis=umid_ar' \
 		-d 'variaveis=prec' \
-		-d 'variaveis=num_focos' 2> /dev/null > $filename
+		-d 'variaveis=num_focos' 2> /dev/null > $file_name
 }
+
+cd "`dirname "$0"`"
+mkdir -p "$DATA_DIR"
+
+[ -f ufs.txt ] || cp all_ufs.txt ufs.txt
 
 if [ "$1" ]
 then
 	ufs=$1
 else
-	ufs="12 27 16 13 29 23 53 32 52 21 51 50 31 15 25 41 26 22 33 24 43 11 14 42 35 28 17"
+	ufs="`cat ufs.txt`"
 fi
 
 for uf in $ufs
@@ -63,4 +70,7 @@ do
 			request_and_save $uf $initial_date $final_date
 		done
 	done
+	# https://superuser.com/a/742034
+	7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on $DATA_DIR/$uf.7z $DATA_DIR/$uf*.csv
+	rm $DATA_DIR/$uf*.csv
 done
