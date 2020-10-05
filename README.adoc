@@ -1,15 +1,42 @@
 = Robô "Chupa Cabra" para dados disponibilizados pelo SISAM/INPE
 :icons: font
 
-Nesta versão 0.1 o robô pode ser iniciado assim:
+Nesta versão, o robô pode ser iniciado assim:
 
 ----
-$ ./chupa-cabra.sh [estado (código IBGE)]
+$ ./chupa-cabra.sh [estado (código IBGE)] | tee chupa-cabra.log
+----
+
+A execução acima fará o download (simultâneo) das informações de dois
+estados por vez até o fim da lista configurada em `ufs.txt` OU, caso
+seja informado um estado, será feito o dowload das informações apenas
+desse.
+
+NOTE: No comando acima, o arquivo `chupa-cabra.log` guardará toda a
+saída produzida pelo script.
+
+Neste próximo exemplo, será realizado o download simultâneo (em
+paralelo) das informações de quatro estados por vês (antes de serem
+realizados os downloads dos próximos estados da lista configurada em
+`ufs.txt`):
+
+----
+$ PARALLEL=4 ./chupa-cabra.sh
+----
+
+Neste último exemplo, serão realizados downloads apenas para os dois
+primeiros anos (e dois primeiros meses) de apenas cinco estados, com
+três execuções ocorrendo de forma paralela (a última, obviamente, terá
+duas execuções simultâneas):
+
+----
+$ echo "12 27 16 13 29" > ufs.txt
+$ PARALLEL=3 FINAL_YEAR=2001 FINAL_MONTH=02 ./chupa-cabra.sh | tee ./chupa-cabra.log
 ----
 
 Leia o script link:chupa-cabra.sh[] para entender os detalhes.
 
-NOTE: O script link:chupa-cabra.js[] (ainda não acabado) oferecerá as
+WARNING: O script link:chupa-cabra.js[] (ainda não acabado) oferecerá as
 mesmas funcionalidades mas com execução através do Node.js da seguinte
 forma:
 
