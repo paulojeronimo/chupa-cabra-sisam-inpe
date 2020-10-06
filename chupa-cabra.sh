@@ -76,6 +76,12 @@ request_and_save() {
 	echo "File $file_name generated!"
 }
 
+sync_with_gdrive() {
+	echo -n "Synchronizing 7z files from $DATA_DIR to \"$GDRIVE_DIR\" ..."
+	rsync -a $DATA_DIR/*.7z "$GDRIVE_DIR"/
+	echo ok
+}
+
 remove_files_with_zero_size() {
 	local uf=$1
 	local f
@@ -140,6 +146,8 @@ fi
 echo "Start time: `date`"
 number_of_ufs=`cat ufs.txt | tr ' ' '\n' | wc -l | xargs`
 echo "Number of UFs to download information: $number_of_ufs"
+
+sync_with_gdrive
 
 count=0
 total=0
