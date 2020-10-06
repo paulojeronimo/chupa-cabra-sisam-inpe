@@ -14,6 +14,7 @@ INITIAL_YEAR=${INITIAL_YEAR:-2000}
 FINAL_YEAR=${FINAL_YEAR:-2018}
 INITIAL_MONTH=${INITIAL_MONTH:-01}
 FINAL_MONTH=${FINAL_MONTH:-12}
+GDRIVE_DIR=${GDRIVE_DIR:-~/Google\ Drive/tmp/queimadas}
 { set +x; } 2> /dev/null
 
 final_day() {
@@ -37,7 +38,8 @@ request_and_save() {
 	local uf=$1
 	local inicio=$2
 	local final=$3
-	local file_name=$DATA_DIR/${uf}_${month}_${year}.csv
+	local file_name=$DATA_DIR/${uf}/${uf}_${year}_${month}.csv
+	local error_file=`mktemp`
 
 	echo "File $file_name is being generated ..."
 	$FAKE_MODE && {
@@ -65,15 +67,25 @@ request_and_save() {
 			-d 'variaveis=temp_ar' \
 			-d 'variaveis=umid_ar' \
 			-d 'variaveis=prec' \
-			-d 'variaveis=num_focos' 2> /dev/null > $file_name || {
+			-d 'variaveis=num_focos' 2> $error_file > $file_name || {
 			echo "File $file_name could not be generated!"
+			cp $error_file $file_name.error.txt
 			return
 		}
 	}
 	echo "File $file_name generated!"
 }
 
-function request_and_save_by_uf() {
+remove_files_with_zero_size() {
+	local uf=$1
+	local f
+	for f in $(find $DATA_DIR/$uf -type f -size 0)
+	do
+		echo "Removing file $f because it has 0 size!"
+	done
+}
+
+request_and_save_by_uf() {
 	local initial_date
 	local final_date
 	local uf=$1
@@ -82,6 +94,10 @@ function request_and_save_by_uf() {
 	local file_name=$DATA_DIR/$uf.7z
 
 	echo "Starting generation for UF $uf ..."
+	$FAKE_MODE || {
+		mkdir -p $DATA_DIR/$uf
+		remove_files_with_zero_size $uf
+	}
 	for year in `eval "echo {$INITIAL_YEAR..$FINAL_YEAR}"`
 	do
 		! [ -f $file_name ] || {
@@ -97,11 +113,15 @@ function request_and_save_by_uf() {
 		done
 	done
 	$FAKE_MODE || {
+		cd $DATA_DIR/$uf
 		# https://superuser.com/a/742034
-		7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on $file_name $DATA_DIR/$uf*.csv &> /dev/null
-		echo -e "File $file_name generated!"
-		rm -f $DATA_DIR/$uf*.csv
-		echo "Files $DATA_DIR/$uf*.csv removed!"
+		7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on ../$(basename $file_name) *.csv &> /dev/null
+		cd - &> /dev/null
+		echo "File $file_name generated!"
+		cp $file_name $GDRIVE_DIR/
+		echo "File $file_name copied to \"$GDRIVE_DIR\"!"
+		rm -rf $DATA_DIR/$uf
+		echo "Directory $DATA_DIR/$uf removed!"
 	}
 	echo "Generation for UF $uf finished!"
 }
