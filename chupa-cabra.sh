@@ -88,6 +88,7 @@ remove_files_with_zero_size() {
 	for f in $(find $DATA_DIR/$uf -type f -size 0)
 	do
 		echo "Removing file $f because it has 0 size!"
+		rm -f $f
 	done
 }
 
