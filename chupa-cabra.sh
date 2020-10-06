@@ -45,6 +45,7 @@ INITIAL_YEAR=${INITIAL_YEAR:-2000}
 FINAL_YEAR=${FINAL_YEAR:-2018}
 INITIAL_MONTH=${INITIAL_MONTH:-01}
 FINAL_MONTH=${FINAL_MONTH:-12}
+GDRIVE_SYNC=${GDRIVE_SYNC:-false}
 GDRIVE_DIR=${GDRIVE_DIR:-~/Google\ Drive/tmp/queimadas}
 { set +x; } 2> /dev/null
 exec 2>&3
@@ -116,17 +117,24 @@ request_and_save() {
 
 sync_with_gdrive() {
 	echo -n "Synchronizing 7z files from $DATA_DIR to \"$GDRIVE_DIR\" ... "
-	rsync -a $DATA_DIR/*.7z "$GDRIVE_DIR"/
+	! [ -n "`ls -A $DATA_DIR/*.7z 2>&-`" ] || rsync -a $DATA_DIR/*.7z "$GDRIVE_DIR"/
 	echo ok
 }
 
-remove_files_with_zero_size() {
+remove_invalid_files() {
 	local uf=$1
 	local f
-	for f in $(find $DATA_DIR/$uf -type f -size 0)
+	for f in $(find $DATA_DIR/$uf -type f -name '*.csv')
 	do
-		log "Removing file $f because it has 0 size!"
-		rm -f $f
+		[ -s $f ] || {
+			log "Removing file $f because it has 0 size!"
+			rm -f $f
+			continue
+		}
+		grep -q "^datahora,co_ppb,no2_ppb.*,mun_lon,mun_uf_nome" <(head -1 $f) || {
+			log "Removing file $f because it has an invalid header!"
+			rm -f $f
+		}
 	done
 }
 
@@ -140,8 +148,8 @@ request_and_save_by_uf() {
 
 	log "Starting generation for UF $uf ..."
 	$FAKE_MODE || {
-		mkdir -p $DATA_DIR/$uf
-		remove_files_with_zero_size $uf
+		! [ -f $file_name ] || mkdir -p $DATA_DIR/$uf
+		remove_invalid_files $uf
 	}
 	for year in `eval "echo {$INITIAL_YEAR..$FINAL_YEAR}"`
 	do
@@ -159,11 +167,12 @@ request_and_save_by_uf() {
 	done
 	$FAKE_MODE || {
 		cd $DATA_DIR/$uf
+		log "Building $file_name ..."
 		# Ref1
 		7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on ../$(basename $file_name) *.csv &> /dev/null
 		cd - &> /dev/null
 		log "File $file_name generated!"
-		cp $file_name $GDRIVE_DIR/
+		cp $file_name "$GDRIVE_DIR"/
 		log "File $file_name copied to \"$GDRIVE_DIR\"!"
 		rm -rf $DATA_DIR/$uf
 		log "Directory $DATA_DIR/$uf removed!"
@@ -187,7 +196,7 @@ cd "$BASE_DIR"
 number_of_ufs=`cat ufs.txt | tr ' ' '\n' | wc -l | xargs`
 echo "Number of UFs to download information: $number_of_ufs"
 
-sync_with_gdrive
+! $GDRIVE_SYNC || sync_with_gdrive
 
 count=0
 total=0
