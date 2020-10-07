@@ -14,7 +14,8 @@
 set -eou pipefail
 BASE_DIR=`cd "$(dirname "$0")";pwd`
 INSTANCE=`date +%s`
-LOG=${LOG:-`basename "$0" .sh`.$INSTANCE.log}
+LOG_DIR=${LOG_DIR:-tmp}
+LOG_FILE=${LOG_FILE:-`basename "$0" .sh`.$INSTANCE.log}
 
 # Configure functions for the execution environment
 case "$OSTYPE" in
@@ -23,16 +24,20 @@ case "$OSTYPE" in
 		;;
 esac
 
+{
 # Ref3
-echo "Start time: $(date -d @$INSTANCE)" > $LOG
-echo "Configured settings:" >> $LOG
+echo "Start time: $(date -d @$INSTANCE)"
+echo "Configured settings:"
+} > "$LOG_DIR/$LOG_FILE"
+
 # Ref2
 exec 3>&2
-exec 2>> $LOG
+exec 2>> "$LOG_DIR/$LOG_FILE"
 set -x
 BASE_DIR=$BASE_DIR
 INSTANCE=$INSTANCE
-LOG=$LOG
+LOG_DIR=$LOG_DIR
+LOG_FILE=$LOG_FILE
 DATA_DIR=${DATA_DIR:-tmp/data}
 FAKE_MODE=${FAKE_MODE:-false}
 FAKE_SLEEP_TIME=${FAKE_SLEEP_TIME:-0.05}
@@ -46,7 +51,7 @@ GDRIVE_DIR=${GDRIVE_DIR:-~/Google\ Drive/tmp/queimadas}
 { set +x; } 2> /dev/null
 exec 2>&3
 exec 3>&-
-cat $LOG
+cat "$LOG_DIR/$LOG_FILE"
 
 log() {
 	echo "$(date) → $@"
@@ -217,4 +222,4 @@ log "Information for $total UFs was downloaded!"
 echo "End time: `date`"
 # https://stackoverflow.com/questions/8903239/how-to-calculate-time-elapsed-in-bash-script
 #echo "Elapsed time: "
-} |& tee -a $LOG
+} |& tee -a "$LOG_DIR/$LOG_FILE"
