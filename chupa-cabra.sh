@@ -16,13 +16,9 @@ BASE_DIR=`cd "$(dirname "$0")";pwd`
 INSTANCE=`date +%s`
 LOG=${LOG:-`basename "$0" .sh`.$INSTANCE.log}
 
-# Check the prerequisites for the execution environment
+# Configure functions for the execution environment
 case "$OSTYPE" in
 	darwin*)
-		command -v gdate &> /dev/null || {
-			echo "Install gdate! (brew install coreutils)" | tee -a $LOG
-			exit 1
-		}
 		date() { gdate "$@"; }
 		;;
 esac
@@ -148,7 +144,7 @@ request_and_save_by_uf() {
 
 	log "Starting generation for UF $uf ..."
 	$FAKE_MODE || {
-		! [ -f $file_name ] || mkdir -p $DATA_DIR/$uf
+		[ -f $file_name ] || mkdir -p $DATA_DIR/$uf
 		remove_invalid_files $uf
 	}
 	for year in `eval "echo {$INITIAL_YEAR..$FINAL_YEAR}"`
@@ -172,8 +168,10 @@ request_and_save_by_uf() {
 		7z a -t7z -m0=lzma -mx=9 -mfb=64 -md=32m -ms=on ../$(basename $file_name) *.csv &> /dev/null
 		cd - &> /dev/null
 		log "File $file_name generated!"
-		cp $file_name "$GDRIVE_DIR"/
-		log "File $file_name copied to \"$GDRIVE_DIR\"!"
+		! $GDRIVE_SYNC || {
+			cp $file_name "$GDRIVE_DIR"/
+			log "File $file_name copied to \"$GDRIVE_DIR\"!"
+		}
 		rm -rf $DATA_DIR/$uf
 		log "Directory $DATA_DIR/$uf removed!"
 	}
@@ -184,16 +182,17 @@ mkdir -p "$DATA_DIR"
 
 [ -f ufs.txt ] || cp all_ufs.txt ufs.txt
 
-if [ "${1:-}" ]
+if [ "$#" -ne 0 ]
 then
-	ufs=$1
+	ufs="$@"
+	number_of_ufs=$#
 else
 	ufs="`cat ufs.txt`"
+	number_of_ufs=`cat ufs.txt | tr ' ' '\n' | wc -l | xargs`
 fi
 
 {
 cd "$BASE_DIR"
-number_of_ufs=`cat ufs.txt | tr ' ' '\n' | wc -l | xargs`
 echo "Number of UFs to download information: $number_of_ufs"
 
 ! $GDRIVE_SYNC || sync_with_gdrive
@@ -216,4 +215,6 @@ do
 done
 log "Information for $total UFs was downloaded!"
 echo "End time: `date`"
+# https://stackoverflow.com/questions/8903239/how-to-calculate-time-elapsed-in-bash-script
+#echo "Elapsed time: "
 } |& tee -a $LOG
