@@ -1,0 +1,16 @@
+FROM alpine:latest
+RUN apk add --no-cache \
+	bash \
+	curl \
+	p7zip \
+	rsync
+RUN rm -rf \
+	/tmp/* \
+	/var/cache/apk/*
+ADD files-to-add/* /workdir/
+WORKDIR /workdir
+VOLUME /data
+ENV CONFIG_DIR=/data
+ENV LOG_DIR=/data
+ENV DATA_DIR=/data
+ENTRYPOINT ["/workdir/_ENTRYPOINT_"]
