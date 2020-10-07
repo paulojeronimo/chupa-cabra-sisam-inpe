@@ -38,6 +38,7 @@ BASE_DIR=$BASE_DIR
 INSTANCE=$INSTANCE
 LOG_DIR=$LOG_DIR
 LOG_FILE=$LOG_FILE
+CONFIG_DIR=${CONFIG_DIR:-.}
 DATA_DIR=${DATA_DIR:-tmp/data}
 FAKE_MODE=${FAKE_MODE:-false}
 FAKE_SLEEP_TIME=${FAKE_SLEEP_TIME:-0.05}
@@ -185,15 +186,15 @@ request_and_save_by_uf() {
 
 mkdir -p "$DATA_DIR"
 
-[ -f ufs.txt ] || cp all_ufs.txt ufs.txt
+[ -f "$CONFIG_DIR"/ufs.txt ] || cp all_ufs.txt "$CONFIG_DIR"/ufs.txt
 
 if [ "$#" -ne 0 ]
 then
 	ufs="$@"
 	number_of_ufs=$#
 else
-	ufs="`cat ufs.txt`"
-	number_of_ufs=`cat ufs.txt | tr ' ' '\n' | wc -l | xargs`
+	ufs="`cat "$CONFIG_DIR"/ufs.txt`"
+	number_of_ufs=`cat "$CONFIG_DIR"/ufs.txt | tr ' ' '\n' | wc -l | xargs`
 fi
 
 {
