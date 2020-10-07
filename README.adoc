@@ -7,6 +7,8 @@
 :idseparator: -
 :sectanchors:
 
+:Docker: https://docker.com[Docker^]
+
 == Introdução
 
 Este projeto cria um robô para a extração dos dados de queimadas
@@ -18,16 +20,20 @@ http://queimadas.dgi.inpe.br/queimadas/sisam/v2/dados/download/
 
 === macOS
 
+* Bash (>= 5)
+* curl
 * gdate (pacote coreutils)
 * 7z (pacote p7zip)
 
 === Ubuntu
 
+* Bash (>= 5)
+* curl
 * 7z (pacote p7zip-full)
 
 === Windows
 
-* Docker
+* {Docker}
 
 == Execução direta (através do script)
 
@@ -67,3 +73,7 @@ $ PARALLEL=3 FINAL_YEAR=2001 FINAL_MONTH=02 ./chupa-cabra.sh
 Leia o script link:chupa-cabra.sh[] para entender os detalhes.
 
 == Execução via Docker
+
+----
+$ docker run -it --rm -v "$PWD":/data paulojeronimo/sisam-inpe-queimadas-downloader
+----
